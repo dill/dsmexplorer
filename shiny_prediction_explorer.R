@@ -44,7 +44,7 @@ M <- dsm.xy.depth
 
 preds <- mexdolphins$preddata
 
-pp <- predict(dsm.xy.depth, preds, preds$area)
+preds$Nhat <- predict(dsm.xy.depth, preds, preds$area)
 
 # interface
 ui <- fluidPage(
@@ -78,15 +78,13 @@ server <- function(input, output) {
     isolate(pd <<- nearPoints(preds, input$plot1_click, xvar="x", yvar="y"))
     if(nrow(pd)==0){
       ggplot(preds) +
-#        geom_point(aes(x=x, y=y))# +
-      grid_plot_obj(pp, "Abundance", pred.polys) +
-      coord_equal() +
-      theme_minimal()
-#      geom_path(aes(x=x, y=y), data=survey.area)
-#      labs(fill="Abundance")
+        grid_plot_obj(preds$Nhat, "Abundance", pred.polys) +
+        coord_equal() +
+        theme_minimal() +
+        geom_path(aes(x=x, y=y), data=survey.area)
     }else{
       ggplot(preds) +
-        grid_plot_obj(pp, "Abundance", pred.polys) +
+        grid_plot_obj(preds$Nhat, "Abundance", pred.polys) +
         geom_point(aes(x=x, y=y), data=pd, col="red")
         coord_equal() +
         theme_minimal()
