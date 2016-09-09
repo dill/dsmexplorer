@@ -11,4 +11,8 @@ Explorations:
 - `shiny_resid_explorer.R` investigate deviance residual quantile-quantile plot
 
 
+# License
+
+All code is GPL >= 2.
+
 
