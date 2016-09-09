@@ -85,7 +85,12 @@ server <- function(input, output) {
   })
 
   output$plot2 <- renderPlot({
-    plot(M, select=2)
+
+    # exclude the bivariate x,y term
+    bad_term <- "s(x,y)"
+    m_terms <- lapply(M$smooth, `[[`, "label")
+
+    plot(M, select=which(m_terms!=bad_term), pages=1)
 
     pd <- nearPoints(preds, input$plot1_click, xvar="x", yvar="y")
     if(nrow(pd)>0){
