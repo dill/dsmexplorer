@@ -75,20 +75,13 @@ ui <- fluidPage(
 server <- function(input, output) {
   output$plot1 <- renderPlot({
 
-    isolate(pd <<- nearPoints(preds, input$plot1_click, xvar="x", yvar="y"))
-    if(nrow(pd)==0){
-      ggplot(preds) +
-        grid_plot_obj(preds$Nhat, "Abundance", pred.polys) +
-        coord_equal() +
-        theme_minimal() +
-        geom_path(aes(x=x, y=y), data=survey.area)
-    }else{
-      ggplot(preds) +
-        grid_plot_obj(preds$Nhat, "Abundance", pred.polys) +
-        geom_point(aes(x=x, y=y), data=pd, col="red")
-        coord_equal() +
-        theme_minimal()
-    }
+    #pd <- nearPoints(preds, input$plot1_click, xvar="x", yvar="y")
+    ggplot(preds) +
+      grid_plot_obj(preds$Nhat, "Abundance", pred.polys) +
+      coord_equal() +
+      theme_minimal() +
+      geom_path(aes(x=x, y=y), data=survey.area)# +
+      #geom_point(aes(x=x, y=y), data=pd)
   })
 
   output$plot2 <- renderPlot({
