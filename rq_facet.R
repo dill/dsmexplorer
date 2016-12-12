@@ -31,7 +31,7 @@ rq_facet <- function(model){
   for(tt in attr(terms(model), "term.labels")){
 
     p <- ggplot(dat) +
-      geom_point(aes_string(x="linear_pred", y="qres", col=tt)) +
+      geom_point(aes_string(x="linear_pred", y="qres", col=tt), alpha=0.4) +
       labs(x="Linear predictor", y="Rand quant resids") +
       theme_minimal()
 
