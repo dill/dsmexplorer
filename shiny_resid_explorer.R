@@ -3,24 +3,47 @@ library(ggplot2)
 
 
 library(mgcv)
+library(Distance)
+library(dsm)
+load("~/current/multiddfdsm/example/spermwhale.RData")
+dfa <- ds(obs, truncation=8000)
+adsm <- dsm(count~s(x,y), dfa, segs, obs, family=tw())
 
-# abstract this!
-load("mexdolphins_models.RData")
-M <- dsm.xy.depth
 
+make_data <- function(model, type = "deviance"){
 
+  # get model terms
+  model_terms <- attr(terms(model), "term.labels")
 
-resids <- residuals(M, type="deviance")
+  # get deviance residuals and their order
+  resids <- residuals(model, type=type)
+  ind <- order(resids)
 
-# all qqplot does is sort both inputs and plot
-#rly_qq_dat <- qqplot(x=unname(qq.gam(M)), y=resids, plot=FALSE)
-rly_qq_dat <- qq.gam(M)
-rly_qq_dat$count <- M$y[order(resids)]
-rly_qq_dat$fitted <- fitted(M)[order(resids)]
+  # build the data
+  # cannibalised from qq.gam
+  n <- length(resids)
+  fam <- fix.family.rd(model$family)
+  if (!is.null(fam$rd)) {
+  rep<-50
+  dm <- matrix(0, n, rep)
+  for (i in 1:rep) {
+    yr <- fam$rd(model$fitted.values, model$prior.weights, model$sig2)
+    model$y <- yr
+    dm[, i] <- sort(residuals(model, type = type))
+  }
+  Dq <- quantile(as.numeric(dm), (1:n - 0.5)/n)
+  }
+  rly_qq_dat <- data.frame(resids    = sort(resids),
+                           quantiles = sort(unname(Dq)),
+                           count     = model$y[ind],
+                           fitted    = fitted(model)[ind])
+  rly_qq_dat <- cbind(adsm$data[, model_terms][ind, ], rly_qq_dat)
 
-rly_qq_dat$dev_res <- rly_qq_dat$y
-rly_qq_dat <- as.data.frame(rly_qq_dat)
+  attr(rly_qq_dat, "model_terms") <- model_terms
+  return(rly_qq_dat)
+}
 
+rly_qq_dat <- make_data(adsm)
 
 # interface
 ui <- fluidPage(
@@ -44,7 +67,7 @@ ui <- fluidPage(
       h4("Number of points"),
       verbatimTextOutput("brush_info_n")
     ),
-    column(width = 4,
+    column(width = 6,
       h4("Data"),
       verbatimTextOutput("brush_info")
     )
@@ -54,7 +77,7 @@ ui <- fluidPage(
 # processing
 server <- function(input, output) {
   output$plot1 <- renderPlot({
-    plot(x=rly_qq_dat$x, y=rly_qq_dat$y, pch=".",
+    plot(x=rly_qq_dat$quantiles, y=rly_qq_dat$resids, pch=".",
       xlab="Theoretical quantile", ylab="Deviance residual")
   })
 
@@ -62,11 +85,11 @@ server <- function(input, output) {
     par(mfrow=c(1,2))
 
     # plot of resids
-    hist(rly_qq_dat$dev_res, main="Histogram of deviance residuals",
-         breaks=seq(min(rly_qq_dat$dev_res), max(rly_qq_dat$dev_res), len=100),
+    hist(rly_qq_dat$resids, main="Histogram of deviance residuals",
+         breaks=seq(min(rly_qq_dat$resids), max(rly_qq_dat$resids), len=100),
          xlab="Deviance residuals")
-    pd <- brushedPoints(rly_qq_dat, input$plot1_brush, xvar="x",
-                       yvar="y")$dev_res
+    pd <- brushedPoints(rly_qq_dat, input$plot1_brush, xvar="resids",
+                       yvar="quantiles")$resids
     if(length(pd)!=0){
       abline(v=pd, col="red")
     }
@@ -75,26 +98,25 @@ server <- function(input, output) {
     hist(rly_qq_dat$count, main="Histogram of observed counts",
          breaks=seq(min(rly_qq_dat$count), max(rly_qq_dat$count), len=100),
          xlab="Counts")
-    pd <- brushedPoints(rly_qq_dat, input$plot1_brush, xvar="x",
-                        yvar="y")$count
+    pd <- brushedPoints(rly_qq_dat, input$plot1_brush, xvar="count",
+                        yvar="resids")$count
     if(length(pd)!=0){
       abline(v=pd, col="red")
     }
 
   })
 
+  # responsive bits
   output$click_info <- renderPrint({
-    # Because it's a ggplot2, we don't need to supply xvar or yvar; if this
-    # were a base graphics plot, we'd need those.
     nearPoints(rly_qq_dat, input$plot1_click, addDist = TRUE,
-               xvar="x", yvar="y")
+               xvar="quantiles", yvar="resids")
   })
 
   output$brush_info_n <- renderPrint({
-    nrow(brushedPoints(rly_qq_dat, input$plot1_brush, xvar="x", yvar="y"))})
+    nrow(brushedPoints(rly_qq_dat, input$plot1_brush, xvar="quantiles", yvar="resids"))})
 
   output$brush_info <- renderPrint({
-    brushedPoints(rly_qq_dat, input$plot1_brush, xvar="x", yvar="y")})
+    brushedPoints(rly_qq_dat, input$plot1_brush, xvar="quantiles", yvar="resids")})
 }
 
 shinyApp(ui, server)
