@@ -48,6 +48,7 @@ rly_qq_dat <- make_data(adsm)
 # interface
 ui <- fluidPage(
   h1("Deviance residuals"),
+  h3("Select a subset of the residuals to explore their properties"),
   fluidRow(
     column(width = 3,
       plotOutput("plot1", height = 400, width=400,
@@ -63,13 +64,13 @@ ui <- fluidPage(
     )
   ),
   fluidRow(
-    column(width = 1,
-      h4("Number of points"),
-      verbatimTextOutput("brush_info_n")
-    ),
     column(width = 6,
       h4("Data"),
       verbatimTextOutput("brush_info")
+    ),
+    column(width = 1,
+      h4("Number of points:"),
+      h4(textOutput("brush_info_n"))
     )
   )
 )
@@ -78,7 +79,8 @@ ui <- fluidPage(
 server <- function(input, output) {
   output$plot1 <- renderPlot({
     plot(x=rly_qq_dat$quantiles, y=rly_qq_dat$resids, pch=".",
-      xlab="Theoretical quantile", ylab="Deviance residual")
+         xlab="Theoretical quantile", ylab="Deviance residual",
+         main="Quantile-quantile plot")
   })
 
   output$plot2 <- renderPlot({
@@ -91,7 +93,7 @@ server <- function(input, output) {
     pd <- brushedPoints(rly_qq_dat, input$plot1_brush, xvar="resids",
                        yvar="quantiles")$resids
     if(length(pd)!=0){
-      abline(v=pd, col="red")
+      rug(pd, col="red")
     }
 
     # plot of counts
@@ -101,7 +103,7 @@ server <- function(input, output) {
     pd <- brushedPoints(rly_qq_dat, input$plot1_brush, xvar="count",
                         yvar="resids")$count
     if(length(pd)!=0){
-      abline(v=pd, col="red")
+      rug(pd, col="red")
     }
 
   })
