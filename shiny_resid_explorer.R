@@ -46,32 +46,25 @@ make_data <- function(model, type = "deviance"){
 rly_qq_dat <- make_data(adsm)
 
 # interface
-ui <- fluidPage(
-  h1("Deviance residuals"),
-  h3("Select a subset of the residuals to explore their properties"),
-  fluidRow(
-    column(width = 3,
-      plotOutput("plot1", height = 400, width=400,
-        # Equivalent to: click = clickOpts(id = "plot_click")
-        click = "plot1_click",
-        brush = brushOpts(
-          id = "plot1_brush"
-        )
+ui <- pageWithSidebar(
+  headerPanel("Residual explorer 📈🗺"),
+  sidebarPanel(
+    selectInput('modelobj', 'Model object',
+                Filter(function(x) inherits(get(x), 'dsm' ), ls() )),
+    h4('Select a subset of the residuals to explore their properties'),
+    plotOutput("plot1",
+      # Equivalent to: click = clickOpts(id = "plot_click")
+      click = "plot1_click",
+      brush = brushOpts(
+        id = "plot1_brush"
       )
-    ),
-    column(width = 6, offset=1,
-      plotOutput("plot2", height = 400, width=800)
     )
   ),
-  fluidRow(
-    column(width = 6,
-      h4("Data"),
-      verbatimTextOutput("brush_info")
-    ),
-    column(width = 1,
-      h4("Number of points:"),
-      h4(textOutput("brush_info_n"))
-    )
+  mainPanel(
+    h4(textOutput("how_many")),
+    plotOutput("plot2", height = 400, width=800),
+    h4("Data"),
+    verbatimTextOutput("brush_info")
   )
 )
 
@@ -114,8 +107,13 @@ server <- function(input, output) {
                xvar="quantiles", yvar="resids")
   })
 
-  output$brush_info_n <- renderPrint({
-    nrow(brushedPoints(rly_qq_dat, input$plot1_brush, xvar="quantiles", yvar="resids"))})
+
+  output$how_many <- renderText({
+    paste("Number of points:",
+          nrow(brushedPoints(rly_qq_dat, input$plot1_brush,
+                             xvar="quantiles", yvar="resids")))
+  })
+
 
   output$brush_info <- renderPrint({
     brushedPoints(rly_qq_dat, input$plot1_brush, xvar="quantiles", yvar="resids")})
