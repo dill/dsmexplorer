@@ -5,11 +5,14 @@ library(ggplot2)
 library(mgcv)
 library(Distance)
 library(dsm)
+
+
+# example analyses
 load("~/current/multiddfdsm/example/spermwhale.RData")
 dfa <- ds(obs, truncation=8000)
 adsm <- dsm(count~s(x,y), dfa, segs, obs, family=tw())
 
-
+# pre-format the data
 make_data <- function(model, type = "deviance"){
 
   # get model terms
@@ -44,6 +47,7 @@ make_data <- function(model, type = "deviance"){
 }
 
 rly_qq_dat <- make_data(adsm)
+
 
 # interface
 ui <- pageWithSidebar(
